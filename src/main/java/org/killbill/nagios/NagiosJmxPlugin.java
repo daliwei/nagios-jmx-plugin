@@ -355,8 +355,8 @@ public class NagiosJmxPlugin {
                 } else {
                     status = Status.OK;
                 }
-            } else if (value instanceof String) {
-                final String strValue = (String) value;
+            } else {
+                final String strValue = value.toString();
                 if (matchesThreshold(strValue, thresholdCritical)) {
                     status = Status.CRITICAL;
                 } else if (matchesThreshold(strValue, thresholdWarning)) {
@@ -364,12 +364,6 @@ public class NagiosJmxPlugin {
                 } else {
                     status = Status.OK;
                 }
-            } else {
-                throw new NagiosJmxPluginException(
-                        "Type of return value not supported [" +
-                                value.getClass().getName() + "]. Must be either a " +
-                                "Number or String object."
-                );
             }
             outputStatus(out, status, objectName, attributeName, attributeKey,
                     value, unit);
@@ -608,14 +602,13 @@ public class NagiosJmxPlugin {
      */
     private boolean matchesThreshold(final String value, final String threshold)
             throws NagiosJmxPluginException {
-        boolean matchesThreshold = false;
+        final boolean matchesThreshold;
         try {
             if (threshold == null) {
                 matchesThreshold = false;
             } else {
                 if (threshold.startsWith("@")) {
-                    matchesThreshold = Pattern.matches(threshold.substring(1),
-                            value);
+                    matchesThreshold = Pattern.matches(threshold.substring(1), value);
                 } else {
                     matchesThreshold = !Pattern.matches(threshold, value);
                 }
