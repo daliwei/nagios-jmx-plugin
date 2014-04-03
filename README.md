@@ -1,7 +1,7 @@
 nagios-jmx-plugin
 =================
 
-Fork of the Syabru Nagios JMX Plugin.
+Fork of the [Syabru Nagios JMX Plugin](http://exchange.nagios.org/directory/Plugins/Java-Applications-and-Servers/Syabru-Nagios-JMX-Plugin/details).
 
 See https://github.com/killbill/killbill/wiki/Nagios-monitoring for how to use it to monitor Kill Bill instances.
 
