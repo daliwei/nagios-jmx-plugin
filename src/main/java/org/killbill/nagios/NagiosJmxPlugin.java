@@ -172,10 +172,7 @@ public class NagiosJmxPlugin {
             if (mBeans.size() == 0) {
                 throw new InstanceNotFoundException();
             } else if (mBeans.size() > 1) {
-                throw new NagiosJmxPluginException(
-                        "Object name not unique: objectName pattern matches " +
-                                mBeans.size() + " MBeans."
-                );
+                throw new NagiosJmxPluginException("Object name not unique: objectName pattern matches " + mBeans.size() + " MBeans.");
             } else {
                 objName = mBeans.iterator().next().getObjectName();
             }
@@ -286,8 +283,7 @@ public class NagiosJmxPlugin {
         try {
             url = new JMXServiceURL(serviceUrl);
         } catch (final MalformedURLException e) {
-            throw new NagiosJmxPluginException("Malformed service URL [" +
-                    serviceUrl + "]", e);
+            throw new NagiosJmxPluginException("Malformed service URL [" + serviceUrl + "]", e);
         }
         // Connect to MBean server.
         MBeanServerConnection connection = null;
@@ -296,41 +292,30 @@ public class NagiosJmxPlugin {
             try {
                 connection = openConnection(url, username, password);
             } catch (final ConnectException ce) {
-                throw new NagiosJmxPluginException(
-                        "Error opening RMI connection: " + ce.getMessage(), ce);
+                throw new NagiosJmxPluginException("Error opening RMI connection: " + ce.getMessage(), ce);
             } catch (final Exception e) {
-                throw new NagiosJmxPluginException(
-                        "Error opening connection: " + e.getMessage(), e);
+                throw new NagiosJmxPluginException("Error opening connection: " + e.getMessage(), e);
             }
             // Query attribute.
             try {
-                value = query(connection, objectName, attributeName,
-                        attributeKey);
+                value = query(connection, objectName, attributeName, attributeKey);
             } catch (final MalformedObjectNameException e) {
-                throw new NagiosJmxPluginException(
-                        "Malformed objectName [" + objectName + "]", e);
+                throw new NagiosJmxPluginException("Malformed objectName [" + objectName + "]", e);
             } catch (final InstanceNotFoundException e) {
-                throw new NagiosJmxPluginException(
-                        "objectName not found [" + objectName + "]", e);
+                throw new NagiosJmxPluginException("objectName not found [" + objectName + "]", e);
             } catch (final AttributeNotFoundException e) {
-                throw new NagiosJmxPluginException(
-                        "attributeName not found [" + attributeName + "]", e);
+                throw new NagiosJmxPluginException("attributeName not found [" + attributeName + "]", e);
             } catch (final InvalidKeyException e) {
-                throw new NagiosJmxPluginException(
-                        "attributeKey not found [" + attributeKey + "]", e);
+                throw new NagiosJmxPluginException("attributeKey not found [" + attributeKey + "]", e);
             } catch (final Exception e) {
-                throw new NagiosJmxPluginException(
-                        "Error querying server: " + e.getMessage(), e);
+                throw new NagiosJmxPluginException("Error querying server: " + e.getMessage(), e);
             }
             // Invoke operation if defined.
             if (operation != null) {
                 try {
                     invoke(connection, objectName, operation);
                 } catch (final Exception e) {
-                    throw new NagiosJmxPluginException(
-                            "Error invoking operation [" + operation + "]: " +
-                                    e.getMessage(), e
-                    );
+                    throw new NagiosJmxPluginException("Error invoking operation [" + operation + "]: " + e.getMessage(), e);
                 }
             }
         } finally {
@@ -338,8 +323,7 @@ public class NagiosJmxPlugin {
                 try {
                     closeConnection(connection);
                 } catch (final Exception e) {
-                    throw new NagiosJmxPluginException(
-                            "Error closing JMX connection", e);
+                    throw new NagiosJmxPluginException("Error closing JMX connection", e);
                 }
             }
         }
@@ -394,24 +378,17 @@ public class NagiosJmxPlugin {
      *                                  clazz or threshold format is not supported.
      * @see http://nagiosplug.sourceforge.net/developer-guidelines.html#THRESHOLDFORMAT
      */
-    Number[] getThresholdLimits(
-            final Class<? extends Number> clazz, final String threshold)
-            throws NagiosJmxPluginException {
+    Number[] getThresholdLimits(final Class<? extends Number> clazz, final String threshold) throws NagiosJmxPluginException {
         // 10
-        final Matcher matcher1 = Pattern.compile(
-                "^(\\d+\\.?\\d*)$").matcher(threshold);
+        final Matcher matcher1 = Pattern.compile("^(\\d+\\.?\\d*)$").matcher(threshold);
         // 10:
-        final Matcher matcher2 = Pattern.compile(
-                "^(\\d+\\.?\\d*):$").matcher(threshold);
+        final Matcher matcher2 = Pattern.compile("^(\\d+\\.?\\d*):$").matcher(threshold);
         // ~:10
-        final Matcher matcher3 = Pattern.compile(
-                "^~:(\\d+\\.?\\d*)$").matcher(threshold);
+        final Matcher matcher3 = Pattern.compile("^~:(\\d+\\.?\\d*)$").matcher(threshold);
         // 10:20
-        final Matcher matcher4 = Pattern.compile(
-                "^(\\d+\\.?\\d*):(\\d+\\.?\\d*)$").matcher(threshold);
+        final Matcher matcher4 = Pattern.compile("^(\\d+\\.?\\d*):(\\d+\\.?\\d*)$").matcher(threshold);
         // @10:20
-        final Matcher matcher5 = Pattern.compile(
-                "^@(\\d+\\.?\\d*):(\\d+\\.?\\d*)$").matcher(threshold);
+        final Matcher matcher5 = Pattern.compile("^@(\\d+\\.?\\d*):(\\d+\\.?\\d*)$").matcher(threshold);
 
         final Number[] limits = new Number[2];
         if (matcher1.matches()) {
@@ -430,8 +407,7 @@ public class NagiosJmxPlugin {
             limits[0] = parseAsNumber(clazz, matcher5.group(2));
             limits[1] = parseAsNumber(clazz, matcher5.group(1));
         } else {
-            throw new NagiosJmxPluginException("Error parsing threshold. " +
-                    "Unknown threshold range format [" + threshold + "]");
+            throw new NagiosJmxPluginException("Error parsing threshold. " + "Unknown threshold range format [" + threshold + "]");
         }
         return limits;
     }
@@ -581,8 +557,7 @@ public class NagiosJmxPlugin {
                                 (max != null &&
                                         compVal.compareTo(max) > 0);
             } else {
-                throw new NumberFormatException("Can't handle object type [" +
-                        value.getClass().getName() + "]");
+                throw new NumberFormatException("Can't handle object type [" + value.getClass().getName() + "]");
             }
         } else {
             outsideThreshold = false;
@@ -615,8 +590,7 @@ public class NagiosJmxPlugin {
             }
             return matchesThreshold;
         } catch (final PatternSyntaxException e) {
-            throw new NagiosJmxPluginException("Error parsing threshold " +
-                    "regex [" + threshold + "]", e);
+            throw new NagiosJmxPluginException("Error parsing threshold " + "regex [" + threshold + "]", e);
         }
     }
 
