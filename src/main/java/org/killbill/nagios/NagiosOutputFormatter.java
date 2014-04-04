@@ -76,7 +76,7 @@ public class NagiosOutputFormatter {
     private void outOnePerformanceData(final String attributeName, final String attributeKey, final Object value,
                                        final Unit unit, final Object thresholdWarning, final Object thresholdCritical,
                                        final Object min, final Object max) {
-        out.append("'").append(getLabel(attributeName, attributeKey)).append("'=").append(value == null ? "0" : value.toString());
+        out.append("'").append(getSanitizedLabel(attributeName, attributeKey)).append("'=").append(value == null ? "0" : value.toString());
 
         if (unit != null) {
             out.append(unit.getAbbreviation());
@@ -98,6 +98,11 @@ public class NagiosOutputFormatter {
         if (max != null) {
             out.append(max.toString());
         }
+    }
+
+    private String getSanitizedLabel(final String attributeName, final String attributeKey) {
+        final String label = getLabel(attributeName, attributeKey);
+        return label.replace(" ", "_").replace("=", "_").replace(";", "_").replace("'", "_");
     }
 
     private String getLabel(final String attributeName, final String attributeKey) {
