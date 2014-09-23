@@ -24,22 +24,22 @@ public class NagiosOutputFormatter {
 
     private final Status status;
     private final String objectName;
-    private final String attributeName;
-    private final String attributeKey;
-    private final Object value;
+    private final String [] attributeNames;
+    private final String [] attributeKeys;
+    private final Object [] values;
     private final Unit unit;
     private final Map<String, Object> performanceData;
 
     private final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     private final PrintStream out = new PrintStream(outStream);
 
-    public NagiosOutputFormatter(final Status status, final String objectName, final String attributeName, final String attributeKey,
-                                 final Object value, final Unit unit, final Map<String, Object> performanceData) {
+    public NagiosOutputFormatter(final Status status, final String objectName, final String [] attributeNames, final String [] attributeKeys,
+                                 final Object [] values, final Unit unit, final Map<String, Object> performanceData) {
         this.status = status;
         this.objectName = objectName;
-        this.attributeName = attributeName;
-        this.attributeKey = attributeKey;
-        this.value = value;
+        this.attributeNames = attributeNames;
+        this.attributeKeys = attributeKeys;
+        this.values = values;
         this.unit = unit;
         this.performanceData = performanceData;
     }
@@ -48,7 +48,7 @@ public class NagiosOutputFormatter {
     public String toString() {
         if (outStream.size() == 0) {
             outputStatus();
-            outPerformanceData();
+            //outPerformanceData();
         }
         return outStream.toString();
     }
@@ -56,8 +56,19 @@ public class NagiosOutputFormatter {
     private void outputStatus() {
         // e.g. "JMX OK - "
         out.append(status.getMessagePrefix());
-
-        out.append(getLabel(attributeName, attributeKey)).append("=").append(value == null ? "NULL" : value.toString());
+        out.append(" | ");
+        boolean first = true;
+        for (int i = 0; i < values.length; i++) {
+            if (!first) {
+                out.append(";");
+            }
+            final String attributeKey = attributeKeys != null ? attributeKeys[i] : null;
+            //out.append(getLabel(attributeNames[i], attributeKey)).append("=").append(values[i] == null ? "NULL" : values[i].toString());
+            if (values[i] != null) {
+                out.append(values[i].toString());
+            }
+            first = false;
+        }
 
         if (unit != null) {
             out.append(unit.getAbbreviation());

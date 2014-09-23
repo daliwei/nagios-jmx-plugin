@@ -16,6 +16,7 @@
 
 package org.killbill.nagios;
 
+import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanAttributeInfo;
@@ -111,7 +112,6 @@ public class JmxClient {
 
     public Object queryAttribute(final ObjectName objectName, final String attributeName, final String attributeKey) throws NagiosJmxPluginException {
         Object value = null;
-
         if (attributeName != null) {
             try {
                 value = query(objectName, attributeName, attributeKey);
@@ -125,9 +125,45 @@ public class JmxClient {
                 throw new NagiosJmxPluginException("Error querying server: " + e.getMessage(), e);
             }
         }
-
         return value;
     }
+
+
+    public Object[] queryAttributes(final ObjectName objectName, final String[] attributeNames, final String[] attributeKeys) throws NagiosJmxPluginException {
+        Object[] values = null;
+        if (attributeNames != null) {
+            try {
+                values = query(objectName, attributeNames, attributeKeys);
+            } catch (final InstanceNotFoundException e) {
+                throw new NagiosJmxPluginException("objectName not found [" + objectName + "]", e);
+            } catch (final AttributeNotFoundException e) {
+                throw new NagiosJmxPluginException("attributeNames not found [" + join(attributeNames) + "]", e);
+            } catch (final InvalidKeyException e) {
+                throw new NagiosJmxPluginException("attributeKeys not found [" + join(attributeKeys) + "]", e);
+            } catch (final Exception e) {
+                throw new NagiosJmxPluginException("Error querying server: " + e.getMessage(), e);
+            }
+        }
+        return values;
+    }
+
+    // Joiner would be nice, but to avoid pulling guava for one function...
+    private String join(final String[] input) {
+        if (input == null) {
+            return "";
+        }
+        final StringBuilder tmp = new StringBuilder();
+        boolean first = true;
+        for (String s : input) {
+            if (!first) {
+                tmp.append(",");
+            }
+            tmp.append(s);
+            first = false;
+        }
+        return tmp.toString();
+    }
+
 
     public void invokeOperation(final ObjectName objectName, final String operation) throws NagiosJmxPluginException {
         // Invoke operation if defined.
@@ -199,7 +235,7 @@ public class JmxClient {
      * @throws MBeanException
      */
     private Object query(final ObjectName objName, final String attributeName, final String attributeKey) throws AttributeNotFoundException, MBeanException,
-                                                                                                                 ReflectionException, InstanceNotFoundException, IOException {
+            ReflectionException, InstanceNotFoundException, IOException {
         final Object value;
 
         final Object attribute = connection.getAttribute(objName, attributeName);
@@ -214,6 +250,33 @@ public class JmxClient {
     }
 
     /**
+     * @param objName
+     * @param attributeNames
+     * @param attributeKeys
+     * @return
+     * @throws AttributeNotFoundException
+     * @throws MBeanException
+     * @throws ReflectionException
+     * @throws InstanceNotFoundException
+     * @throws IOException
+     */
+    private Object[] query(final ObjectName objName, final String[] attributeNames, final String[] attributeKeys) throws AttributeNotFoundException, MBeanException,
+            ReflectionException, InstanceNotFoundException, IOException {
+        final AttributeList attributes = connection.getAttributes(objName, attributeNames);
+        final Object[] result = new Object[attributes.size()];
+        for (int i = 0; i < attributes.size(); i++) {
+            final Object attribute = attributes.get(i);
+            if (attribute instanceof CompositeDataSupport) {
+                final CompositeDataSupport compositeAttr = (CompositeDataSupport) attribute;
+                result[i] = compositeAttr.get(attributeKeys[i]);
+            } else {
+                result[i] = attribute;
+            }
+        }
+        return result;
+    }
+
+    /**
      * Invoke an operation on MBean.
      *
      * @param objectName    Object name.
@@ -224,7 +287,7 @@ public class JmxClient {
      * @throws ReflectionException
      */
     private void invoke(final ObjectName objectName, final String operationName) throws ReflectionException, MBeanException,
-                                                                                        InstanceNotFoundException, IOException {
+            InstanceNotFoundException, IOException {
         connection.invoke(objectName, operationName, null, null);
     }
 }

@@ -98,16 +98,32 @@ public class NagiosJmxPlugin {
         final String username = args.getProperty(PROP_USERNAME);
         final String password = args.getProperty(PROP_PASSWORD);
         final String objectNameString = args.getProperty(PROP_OBJECT_NAME);
-        final String attributeName = args.getProperty(PROP_ATTRIBUTE_NAME);
-        final String attributeKey = args.getProperty(PROP_ATTRIBUTE_KEY);
         final String serviceUrl = args.getProperty(PROP_SERVICE_URL);
-        final String thresholdWarning = args.getProperty(PROP_THRESHOLD_WARNING);
-        final String thresholdCritical = args.getProperty(PROP_THRESHOLD_CRITICAL);
         final String operation = args.getProperty(PROP_OPERATION);
         final String units = args.getProperty(PROP_UNITS);
         final Boolean withPerformanceData = args.getProperty(PROP_PERFORMANCE) != null;
 
-        if (objectNameString == null || (attributeName == null && !withPerformanceData) || serviceUrl == null) {
+
+        final String thresholdWarningList = args.getProperty(PROP_THRESHOLD_WARNING);
+        final String[] thresholdWarnings = thresholdWarningList != null ? thresholdWarningList.split("\\s*,\\s*") : null;
+
+        final String thresholdCriticalList = args.getProperty(PROP_THRESHOLD_CRITICAL);
+        final String[] thresholdCriticals = thresholdCriticalList != null ? thresholdCriticalList.split("\\s*,\\s*") : null;
+
+        final String attributeKeyList = args.getProperty(PROP_ATTRIBUTE_KEY);
+        final String[] attributeKeys = attributeKeyList != null ? attributeKeyList.split("\\s*,\\s*") : null;
+
+        final String attributeNameList = args.getProperty(PROP_ATTRIBUTE_NAME);
+        final String[] attributeNames = attributeNameList != null ? attributeNameList.split("\\s*,\\s*") : null;
+
+        if (objectNameString == null || (attributeNames == null && !withPerformanceData) || serviceUrl == null) {
+            return Status.CRITICAL.getExitCode();
+        }
+
+        if (attributeNames != null &&
+                ((attributeKeys != null && attributeKeys.length != attributeNames.length) ||
+                        (thresholdCriticals != null && thresholdCriticals.length != attributeNames.length) ||
+                        (thresholdWarnings != null && thresholdWarnings.length != thresholdWarnings.length))) {
             return Status.CRITICAL.getExitCode();
         }
 
@@ -120,18 +136,19 @@ public class NagiosJmxPlugin {
             unit = Unit.parse(units);
         }
 
+
         final JmxClient client = new JmxClient(serviceUrl, username, password);
         try {
             client.open();
             final ObjectName objectName = client.getObjectName(objectNameString);
-            final Object value = client.queryAttribute(objectName, attributeName, attributeKey);
+            final Object[] values = client.queryAttributes(objectName, attributeNames, attributeKeys);
 
             // Invoke operation if defined.
             if (operation != null) {
                 client.invokeOperation(objectName, operation);
             }
 
-            final Status status = getStatus(thresholdWarning, thresholdCritical, value);
+            final Status status = getStatus(thresholdWarnings, thresholdCriticals, values);
 
             final Map<String, Object> performanceData = new HashMap<String, Object>();
             if (withPerformanceData) {
@@ -143,8 +160,8 @@ public class NagiosJmxPlugin {
                 }
             }
 
-            final NagiosOutputFormatter outputFormatter = new NagiosOutputFormatter(status, objectNameString, attributeName, attributeKey,
-                                                                                    value, unit, performanceData);
+            final NagiosOutputFormatter outputFormatter = new NagiosOutputFormatter(status, objectNameString, attributeNames, attributeKeys,
+                    values, unit, performanceData);
             out.print(outputFormatter.toString());
             out.println();
 
@@ -203,8 +220,6 @@ public class NagiosJmxPlugin {
                 props.put(PROP_OBJECT_NAME, args[++i]);
             } else if ("-A".equals(args[i])) {
                 props.put(PROP_ATTRIBUTE_NAME, args[++i]);
-            } else if ("-K".equals(args[i])) {
-                props.put(PROP_ATTRIBUTE_KEY, args[++i]);
             } else if ("-v".equals(args[i])) {
                 props.put(PROP_VERBOSE, "true");
             } else if ("-w".equals(args[i])) {

@@ -16,6 +16,7 @@
 
 package org.killbill.nagios;
 
+import javax.management.Attribute;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.regex.Matcher;
@@ -29,31 +30,41 @@ public abstract class NagiosUtils {
     private NagiosUtils() {
     }
 
-    public static Status getStatus(final String thresholdWarning, final String thresholdCritical, final Object value) throws NagiosJmxPluginException {
-        final Status status;
+    public static Status getStatus(final String [] thresholdWarnings, final String [] thresholdCriticals, final Object [] values) throws NagiosJmxPluginException {
 
-        if (value == null) {
-            status = Status.CRITICAL;
-        } else if (value instanceof Number) {
-            final Number numValue = (Number) value;
-            if (isOutsideThreshold(numValue, thresholdCritical)) {
-                status = Status.CRITICAL;
-            } else if (isOutsideThreshold(numValue, thresholdWarning)) {
-                status = Status.WARNING;
-            } else {
-                status = Status.OK;
-            }
-        } else {
-            final String strValue = value.toString();
-            if (matchesThreshold(strValue, thresholdCritical)) {
-                status = Status.CRITICAL;
-            } else if (matchesThreshold(strValue, thresholdWarning)) {
-                status = Status.WARNING;
-            } else {
-                status = Status.OK;
-            }
+        // Start with OK; if we hit CRITICAL for any metrics, this is what we return; if we hit WARNING, we keep it and return it at this end.
+        Status status = Status.OK;
+        if (thresholdWarnings == null || thresholdCriticals == null) {
+            return status;
         }
 
+        for (int i = 0; i < values.length; i++) {
+
+            final Object value = values[i];
+            final String thresholdCritical = thresholdCriticals[i];
+            final String thresholdWarning = thresholdWarnings[i];
+
+            if (value == null) {
+                status = Status.CRITICAL;
+                break;
+            } else if (value instanceof Attribute && ((Attribute) value).getValue() instanceof Number) {
+                final Number numValue = (Number) ((Attribute) value).getValue();
+                if (isOutsideThreshold(numValue, thresholdCritical)) {
+                    status = Status.CRITICAL;
+                    break;
+                } else if (isOutsideThreshold(numValue, thresholdWarning)) {
+                    status = Status.WARNING;
+                }
+            } else {
+                final String strValue = value.toString();
+                if (matchesThreshold(strValue, thresholdCritical)) {
+                    status = Status.CRITICAL;
+                    break;
+                } else if (matchesThreshold(strValue, thresholdWarning)) {
+                    status = Status.WARNING;
+                }
+            }
+        }
         return status;
     }
 
