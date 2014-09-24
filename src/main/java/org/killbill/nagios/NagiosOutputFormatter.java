@@ -56,20 +56,21 @@ public class NagiosOutputFormatter {
     private void outputStatus() {
         // e.g. "JMX OK - "
         out.append(status.getMessagePrefix());
-        out.append(" | ");
-        boolean first = true;
-        for (int i = 0; i < values.length; i++) {
-            if (!first) {
-                out.append(";");
+        if (values != null && values.length > 0) {
+            out.append(" | ");
+            boolean first = true;
+            for (int i = 0; i < values.length; i++) {
+                if (!first) {
+                    out.append(";");
+                }
+                final String attributeKey = attributeKeys != null ? attributeKeys[i] : null;
+                //out.append(getLabel(attributeNames[i], attributeKey)).append("=").append(values[i] == null ? "NULL" : values[i].toString());
+                if (values[i] != null) {
+                    out.append(values[i].toString());
+                }
+                first = false;
             }
-            final String attributeKey = attributeKeys != null ? attributeKeys[i] : null;
-            //out.append(getLabel(attributeNames[i], attributeKey)).append("=").append(values[i] == null ? "NULL" : values[i].toString());
-            if (values[i] != null) {
-                out.append(values[i].toString());
-            }
-            first = false;
         }
-
         if (unit != null) {
             out.append(unit.getAbbreviation());
         }

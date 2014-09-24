@@ -86,6 +86,10 @@ public class NagiosJmxPlugin {
      * Gather performance data.
      */
     public static final String PROP_PERFORMANCE = "performance";
+    /**
+     * If JMX metric is not existing ignore it instead of returning CRITICAL
+     */
+    public static final String PROP_IGNORE_MISSING = "ignoreMissing";
 
     /**
      * Get system properties and execute query
@@ -101,8 +105,8 @@ public class NagiosJmxPlugin {
         final String serviceUrl = args.getProperty(PROP_SERVICE_URL);
         final String operation = args.getProperty(PROP_OPERATION);
         final String units = args.getProperty(PROP_UNITS);
-        final Boolean withPerformanceData = args.getProperty(PROP_PERFORMANCE) != null;
-
+        final Boolean withPerformanceData = args.getProperty(PROP_PERFORMANCE) != null ? Boolean.valueOf(args.getProperty(PROP_PERFORMANCE)) : false;
+        final Boolean ignoreUnknownMetrics = args.getProperty(PROP_IGNORE_MISSING) != null ? Boolean.valueOf(args.getProperty(PROP_IGNORE_MISSING)) : false;
 
         final String thresholdWarningList = args.getProperty(PROP_THRESHOLD_WARNING);
         final String[] thresholdWarnings = thresholdWarningList != null ? thresholdWarningList.split("\\s*,\\s*") : null;
@@ -141,27 +145,38 @@ public class NagiosJmxPlugin {
         try {
             client.open();
             final ObjectName objectName = client.getObjectName(objectNameString);
-            final Object[] values = client.queryAttributes(objectName, attributeNames, attributeKeys);
-
             // Invoke operation if defined.
             if (operation != null) {
                 client.invokeOperation(objectName, operation);
             }
 
-            final Status status = getStatus(thresholdWarnings, thresholdCriticals, values);
 
-            final Map<String, Object> performanceData = new HashMap<String, Object>();
-            if (withPerformanceData) {
-                for (final MBeanAttributeInfo attribute : client.getAttributes(objectName)) {
-                    final Object performanceValue = client.queryAttribute(objectName, attribute.getName(), null);
-                    if (performanceValue != null && performanceValue instanceof Number) {
-                        performanceData.put(attribute.getName(), (Number) performanceValue);
+            NagiosOutputFormatter outputFormatter;
+            Status status = Status.OK;
+            try {
+                final Object[] values = client.queryAttributes(objectName, attributeNames, attributeKeys);
+                status = getStatus(thresholdWarnings, thresholdCriticals, values);
+
+                final Map<String, Object> performanceData = new HashMap<String, Object>();
+                if (withPerformanceData) {
+                    for (final MBeanAttributeInfo attribute : client.getAttributes(objectName)) {
+                        final Object performanceValue = client.queryAttribute(objectName, attribute.getName(), null);
+                        if (performanceValue != null && performanceValue instanceof Number) {
+                            performanceData.put(attribute.getName(), (Number) performanceValue);
+                        }
                     }
                 }
-            }
+                outputFormatter = new NagiosOutputFormatter(status, objectNameString, attributeNames, attributeKeys,
+                        values, unit, performanceData);
+            } catch (NagiosJmxPluginException e) {
+                if (ignoreUnknownMetrics) {
+                    outputFormatter = new NagiosOutputFormatter(status, objectNameString, attributeNames, attributeKeys,
+                            null, unit, null);
 
-            final NagiosOutputFormatter outputFormatter = new NagiosOutputFormatter(status, objectNameString, attributeNames, attributeKeys,
-                    values, unit, performanceData);
+                } else {
+                    throw e;
+                }
+            }
             out.print(outputFormatter.toString());
             out.println();
 
@@ -236,6 +251,8 @@ public class NagiosJmxPlugin {
                 props.put(PROP_OPERATION, args[++i]);
             } else if ("-P".equals(args[i])) {
                 props.put(PROP_PERFORMANCE, "true");
+            } else if ("--ignoreMissing".equals(args[i])) {
+                props.put(PROP_IGNORE_MISSING, "true");
             }
             i++;
         }
