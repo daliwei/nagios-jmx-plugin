@@ -66,13 +66,26 @@ public class NagiosOutputFormatter {
                 final String attributeKey = attributeKeys != null ? attributeKeys[i] : null;
                 //out.append(getLabel(attributeNames[i], attributeKey)).append("=").append(values[i] == null ? "NULL" : values[i].toString());
                 if (values[i] != null) {
-                    out.append(values[i].toString());
+                    out.append(stripSpace(values[i].toString()));
                 }
                 first = false;
             }
         }
         if (unit != null) {
             out.append(unit.getAbbreviation());
+        }
+    }
+
+    private String stripSpace(final String metricAssignment) {
+        final String [] parts = metricAssignment.split("\\s*=\\s*");
+        if (parts != null && parts.length == 2) {
+            final StringBuilder tmp = new StringBuilder();
+            tmp.append(parts[0]);
+            tmp.append("=");
+            tmp.append(parts[1]);
+            return tmp.toString();
+        } else {
+            return metricAssignment;
         }
     }
 
