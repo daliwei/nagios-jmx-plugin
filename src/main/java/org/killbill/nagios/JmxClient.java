@@ -16,6 +16,7 @@
 
 package org.killbill.nagios;
 
+import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
@@ -263,10 +264,27 @@ public class JmxClient {
     private Object[] query(final ObjectName objName, final String[] attributeNames, final String[] attributeKeys) throws AttributeNotFoundException, MBeanException,
             ReflectionException, InstanceNotFoundException, IOException {
         final AttributeList attributes = connection.getAttributes(objName, attributeNames);
+
+        // Handle looking up a composite value
+        // e.g. -O java.lang:type=MemoryPool,name=Metaspace -A Usage -K used,committed
+        if (attributeKeys != null &&
+            attributeKeys.length > 0 &&
+            attributes.size() == 1 &&
+            attributes.get(0) instanceof Attribute &&
+            ((Attribute) attributes.get(0)).getValue() instanceof CompositeDataSupport) {
+            final CompositeDataSupport compositeAttr = (CompositeDataSupport) ((Attribute) attributes.get(0)).getValue();
+            final Object[] result = new Object[attributeKeys.length];
+            for (int i = 0; i < attributeKeys.length; i++) {
+                result[i] = new Attribute(attributeKeys[i], compositeAttr.get(attributeKeys[i]));
+            }
+
+            return result;
+        }
+
         final Object[] result = new Object[attributes.size()];
         for (int i = 0; i < attributes.size(); i++) {
             final Object attribute = attributes.get(i);
-            if (attribute instanceof CompositeDataSupport) {
+            if (attribute instanceof CompositeDataSupport && attributeKeys != null) {
                 final CompositeDataSupport compositeAttr = (CompositeDataSupport) attribute;
                 result[i] = compositeAttr.get(attributeKeys[i]);
             } else {

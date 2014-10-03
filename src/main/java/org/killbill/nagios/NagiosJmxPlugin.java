@@ -125,9 +125,8 @@ public class NagiosJmxPlugin {
         }
 
         if (attributeNames != null &&
-                ((attributeKeys != null && attributeKeys.length != attributeNames.length) ||
-                        (thresholdCriticals != null && thresholdCriticals.length != attributeNames.length) ||
-                        (thresholdWarnings != null && thresholdWarnings.length != thresholdWarnings.length))) {
+            ((thresholdCriticals != null && thresholdCriticals.length != attributeNames.length) ||
+             (thresholdWarnings != null && thresholdWarnings.length != thresholdWarnings.length))) {
             return Status.CRITICAL.getExitCode();
         }
 
@@ -235,6 +234,8 @@ public class NagiosJmxPlugin {
                 props.put(PROP_OBJECT_NAME, args[++i]);
             } else if ("-A".equals(args[i])) {
                 props.put(PROP_ATTRIBUTE_NAME, args[++i]);
+            } else if ("-K".equals(args[i])) {
+                props.put(PROP_ATTRIBUTE_KEY, args[++i]);
             } else if ("-v".equals(args[i])) {
                 props.put(PROP_VERBOSE, "true");
             } else if ("-w".equals(args[i])) {
