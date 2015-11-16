@@ -195,6 +195,11 @@ public class NagiosJmxPlugin {
         final Properties props = parseArguments(args);
         final String verbose = props.getProperty(PROP_VERBOSE);
 
+        if (props.containsKey(PROP_HELP)) {
+            printHelpMessage();
+            System.exit(0);
+        }
+
         int exitCode;
         try {
             final NagiosJmxPlugin plugin = new NagiosJmxPlugin();
@@ -214,6 +219,28 @@ public class NagiosJmxPlugin {
         }
 
         System.exit(exitCode);
+    }
+
+    /**
+     * Print help message
+     */
+    private static void printHelpMessage() {
+        String format = "%18s";
+        System.out.println("check_jmx_ng - Get metrics from JMX");
+        System.out.printf(format, "-h:"); System.out.println(" Show this message");
+        System.out.printf(format, "-U:"); System.out.println(" Service URL, eg. service:jmx:rmi:///jndi/rmi://127.0.0.1:9111/jmxrmi");
+        System.out.printf(format, "-O:"); System.out.println(" Object name");
+        System.out.printf(format, "-A:"); System.out.println(" Attribute name");
+        System.out.printf(format, "-K:"); System.out.println(" Attribute key");
+        System.out.printf(format, "-v:"); System.out.println(" Verbose");
+        System.out.printf(format, "-w:"); System.out.println(" Threshold for warning");
+        System.out.printf(format, "-c:"); System.out.println(" Threshold for critical");
+        System.out.printf(format, "--username:"); System.out.println(" Username for JMX connection");
+        System.out.printf(format, "--password:"); System.out.println(" Password for JMX connection");
+        System.out.printf(format, "-u:"); System.out.println(" Units");
+        System.out.printf(format, "-o:"); System.out.println(" Operation");
+        System.out.printf(format, "-P:"); System.out.println(" Performance");
+        System.out.printf(format, "--ignoreMissing:"); System.out.println(" Ignore missing metrics");
     }
 
     /**
